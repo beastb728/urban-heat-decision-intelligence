@@ -14,12 +14,6 @@
 
 ---
 
-## Dashboard Preview
-
-![Dashboard Overview](docs/screenshots/dashboard_overview.png)
-
----
-
 ## Problem Statement
 
 Rapid urbanization has intensified the **Urban Heat Island (UHI)** effect, increasing energy demand, reducing thermal comfort, and exacerbating heat-related health risks during extreme heat events.
@@ -35,56 +29,63 @@ Using **Delhi, India** as a case study, the platform predicts **Land Surface Tem
 ## Key Features
 
 - Land Surface Temperature modelling using Landsat 8 imagery
-- Physics-aware environmental feature engineering
-- Explainable AI using SHAP
-- Scenario-based intervention simulations
+- Physics-aware environmental feature engineering (NDVI, NDBI, NDWI, Albedo, Emissivity)
+- Explainable AI using SHAP (global importance, local explanations, threshold effects)
+- Scenario-based global and targeted intervention simulations
 - Interactive Streamlit dashboard for decision support
 
 ---
 
 ## Final Model Performance
 
-| Metric   | Value        |
-| -------- | ------------ |
-| **R²**   | **0.710**    |
-| **RMSE** | **2.591 °C** |
-| **MAE**  | **1.656 °C** |
+The final deployed model was a **physics-aware XGBoost regressor** trained on satellite-derived environmental indicators across a 250 m planning grid covering Delhi.
 
-The final deployed model was a **physics-aware XGBoost regressor** trained using satellite-derived environmental indicators.
+| Metric   | Random Forest Baseline | XGBoost (Physics-Aware) |
+| -------- | ---------------------- | ----------------------- |
+| **R²**   | 0.612                  | **0.710**               |
+| **RMSE** | 3.140 °C               | **2.591 °C**            |
+| **MAE**  | 2.043 °C               | **1.656 °C**            |
+
+Physics-aware feature engineering (monotonic constraints aligned with thermodynamic relationships) improved R² by ~10 percentage points over the baseline Random Forest.
 
 ---
 
 ## Methodological Workflow
 
 ```text
-Landsat 8 Imagery
+Landsat 8 Imagery (Band 10 — Thermal Infrared)
         ↓
 Land Surface Temperature Derivation
+(Radiative transfer + emissivity correction)
         ↓
 Environmental Feature Engineering
+(NDVI, NDBI, NDWI, Albedo, Emissivity at 250 m grid)
         ↓
-Machine Learning Modelling
+Physics-Aware XGBoost Modelling
+(Monotonic constraints: NDVI ↓ LST, NDBI ↑ LST, NDWI ↓ LST)
         ↓
 SHAP Explainability
+(Global importance, local predictions, threshold detection)
         ↓
 Intervention Simulation
+(Global and targeted hotspot scenarios)
         ↓
-Decision Support Dashboard
+Decision Support Dashboard (Streamlit)
 ```
 
 ---
 
 ## Environmental Indicators
 
-The following predictors were derived and incorporated into the modelling framework:
+The following predictors were derived from Landsat 8 imagery and incorporated into the modelling framework:
 
-| Variable   | Description                  |
-| ---------- | ---------------------------- |
-| NDVI       | Vegetation availability      |
-| NDBI       | Built-up intensity           |
-| NDWI       | Surface moisture conditions  |
-| Albedo     | Surface reflectivity         |
-| Emissivity | Thermal radiation properties |
+| Variable     | Description                   | Expected Relationship with LST |
+| ------------ | ----------------------------- | ------------------------------ |
+| **NDVI**     | Vegetation availability       | Negative (cooling)             |
+| **NDBI**     | Built-up intensity            | Positive (heating)             |
+| **NDWI**     | Surface moisture conditions   | Negative (cooling)             |
+| **Albedo**   | Surface reflectivity          | Negative (reduces heat absorption) |
+| **Emissivity** | Thermal radiation properties | Positive (affects LST retrieval) |
 
 ---
 
@@ -92,10 +93,10 @@ The following predictors were derived and incorporated into the modelling framew
 
 SHAP (SHapley Additive exPlanations) was used to investigate:
 
-- Global feature importance
-- Local prediction explanations
-- Nonlinear relationships between predictors and temperature
-- Threshold effects in environmental variables
+- Global feature importance across all predictions
+- Local prediction explanations for individual grid cells
+- Nonlinear relationships between environmental predictors and temperature
+- Threshold effects (e.g., the NDVI level at which cooling benefits plateau)
 
 ### SHAP Summary Plot
 
@@ -103,43 +104,43 @@ SHAP (SHapley Additive exPlanations) was used to investigate:
 
 ### Key Insights
 
-- Built-up intensity emerged as the strongest contributor to urban heating.
-- Vegetation demonstrated substantial cooling effects.
-- Surface moisture contributed to temperature reductions.
-- Surface reflectivity played an important role in mitigating heat accumulation.
+- **Built-up intensity (NDBI)** emerged as the strongest contributor to urban heating — dense impervious surfaces drive the largest positive LST deviations.
+- **Vegetation (NDVI)** demonstrated substantial cooling effects, with marginal cooling benefits diminishing above an NDVI of approximately 0.4.
+- **Surface moisture (NDWI)** contributed meaningfully to temperature reductions through evaporative cooling.
+- **Surface reflectivity (Albedo)** played an important role in mitigating heat accumulation by reducing absorbed solar radiation.
 
 ---
 
 ## Intervention Simulator
 
-The final model was used to estimate cooling benefits associated with various urban heat mitigation strategies.
+The calibrated XGBoost model was used to simulate LST reductions under hypothetical urban heat mitigation scenarios by modifying the relevant environmental features and re-running predictions.
 
 ### Global Interventions
-
-- Urban Greening
-- Cool Roof Programs
-- Combined Strategies
+Applied to all urban grid cells across Delhi:
+- **Urban Greening** — NDVI increased to represent increased vegetation cover
+- **Cool Roof Programs** — Albedo increased to represent reflective roofing materials
+- **Combined Strategy** — Both greening and cool roofs applied simultaneously
 
 ### Targeted Interventions
+Applied only to the hottest **10%** of urban grid cells (LST hotspots):
+- **Targeted Greening**
+- **Targeted Cool Roofs**
+- **Targeted Combined Strategy**
 
-Interventions applied only to the hottest **10%** of urban locations:
-
-- Targeted Greening
-- Targeted Cool Roofs
-- Targeted Combined Strategies
+> **Note on interpreting results:** Global scenarios modify all grid cells simultaneously, which compounds cooling effects across the city and produces large average reductions. Targeted scenarios affect only ~10% of cells, so city-wide averages are lower — but local cooling at treated hotspot locations can be substantial (see maximum cooling column).
 
 ---
 
 ## Intervention Results
 
-| Scenario            | Average Cooling (°C) | Maximum Cooling (°C) |
-| ------------------- | -------------------- | -------------------- |
-| Global Greening     | 8.06                 | 20.89                |
-| Global Cool Roofs   | 6.11                 | 18.70                |
-| Global Combined     | 14.67                | 29.22                |
-| Targeted Greening   | 1.04                 | 16.53                |
-| Targeted Cool Roofs | 0.72                 | 13.98                |
-| Targeted Combined   | 1.53                 | 22.19                |
+| Scenario              | Cells Modified | Average Cooling (°C) | Maximum Cooling (°C) |
+| --------------------- | -------------- | -------------------- | -------------------- |
+| Global Greening       | 100%           | 8.06                 | 20.89                |
+| Global Cool Roofs     | 100%           | 6.11                 | 18.70                |
+| Global Combined       | 100%           | 14.67                | 29.22                |
+| Targeted Greening     | ~10%           | 1.04 (city-wide avg) | 16.53 (at hotspots)  |
+| Targeted Cool Roofs   | ~10%           | 0.72 (city-wide avg) | 13.98 (at hotspots)  |
+| Targeted Combined     | ~10%           | 1.53 (city-wide avg) | 22.19 (at hotspots)  |
 
 ### Cooling Comparison
 
@@ -147,9 +148,19 @@ Interventions applied only to the hottest **10%** of urban locations:
 
 ### Planning Insights
 
-- Global interventions produced the largest city-wide cooling benefits.
-- Targeted hotspot interventions achieved meaningful localized cooling while affecting a substantially smaller portion of the urban landscape.
-- Strategic prioritization of hotspots may offer a practical compromise between effectiveness and implementation feasibility.
+- **Global interventions** produced the largest city-wide average cooling benefits but require large-scale, resource-intensive implementation.
+- **Targeted hotspot interventions** achieved meaningful localized cooling (up to 22°C at specific locations) while affecting a substantially smaller portion of the urban landscape.
+- **Strategic hotspot prioritization** may offer a practical compromise between effectiveness and implementation feasibility, particularly for resource-constrained municipalities.
+
+---
+
+## Limitations
+
+- **Single city:** The model was trained and evaluated exclusively on Delhi. Generalizability to other cities with different urban morphologies or climates is not established.
+- **Single sensor and season:** Analysis is based on Landsat 8 imagery from a limited temporal window. Seasonal LST variability and inter-annual trends are not captured.
+- **No meteorological variables:** Wind speed, humidity, and air temperature — all of which influence LST — are not incorporated in the current feature set.
+- **Spatial autocorrelation:** Standard cross-validation was used; spatial cross-validation (blocking) was not applied, which may lead to optimistic performance estimates.
+- **Simulation assumptions:** Intervention scenarios assume that changing NDVI or Albedo inputs leads to proportional LST changes as learned by the model. Real-world implementation effects may differ.
 
 ---
 
@@ -157,17 +168,11 @@ Interventions applied only to the hottest **10%** of urban locations:
 
 The Urban Heat Intelligence Platform includes an interactive Streamlit dashboard providing:
 
-- Project overview
-- Model performance summaries
+- Project overview and methodology
+- Model performance summaries and diagnostics
 - SHAP-based explainability outputs
-- Intervention simulation results
+- Intervention simulation results and comparisons
 - Methodological documentation
-
-### Dashboard Demo
-
-![Dashboard Demo](docs/screenshots/demo.gif)
-
-To launch the dashboard:
 
 ```bash
 streamlit run app/dashboard.py
@@ -180,33 +185,33 @@ streamlit run app/dashboard.py
 ```text
 urban_heat_decision_intelligence/
 ├── app/
-│   └── dashboard.py
+│   └── dashboard.py                  # Streamlit dashboard
 │
 ├── data/
-│   ├── external/
-│   ├── processed/
-│   └── raw/
+│   ├── external/                     # External reference data
+│   ├── processed/                    # Cleaned and feature-engineered datasets
+│   └── raw/                          # Raw Landsat 8 exports from Google Earth Engine
 │
 ├── docs/
-│   ├── intervention_comparison.png
-│   ├── intervention_results.csv
-│   ├── methodology.md
-│   ├── shap_summary.png
-│   └── screenshots/
+│   ├── intervention_comparison.png   # Intervention results visualisation
+│   ├── intervention_results.csv      # Numerical simulation outputs
+│   ├── methodology.md                # Detailed methodology notes
+│   ├── shap_summary.png              # SHAP summary plot
+│   └── screenshots/                  # Dashboard screenshots
 │
 ├── notebooks/
-│   ├── 01_eda.ipynb
+│   ├── 01_eda.ipynb                  # Exploratory data analysis
 │   ├── 02_random_forest_baseline.ipynb
 │   ├── 03_xgboost.ipynb
-│   ├── 04_prepare_dataset_v16.ipynb
-│   ├── 05_random_forest_v16.ipynb
-│   ├── 06_xgboost_v16.ipynb
-│   ├── 07_monotonic_xgboost.ipynb
-│   ├── 08_shap_analysis.ipynb
+│   ├── 04_prepare_dataset_v16.ipynb  # Final dataset preparation
+│   ├── 05_random_forest_v16.ipynb    # Baseline model (v16 features)
+│   ├── 06_xgboost_v16.ipynb          # XGBoost model (v16 features)
+│   ├── 07_monotonic_xgboost.ipynb    # Physics-aware XGBoost (final model)
+│   ├── 08_shap_analysis.ipynb        # SHAP explainability
 │   └── 09_intervention_simulator.ipynb
 │
-├── src/
-├── tests/
+├── src/                              # Source modules (in development)
+├── tests/                            # Unit tests (in development)
 ├── README.md
 └── requirements.txt
 ```
@@ -222,7 +227,7 @@ git clone https://github.com/beastb728/urban-heat-decision-intelligence.git
 cd urban-heat-decision-intelligence
 ```
 
-Create and activate a virtual environment:
+Create and activate a virtual environment (Python 3.12 recommended):
 
 ```bash
 python -m venv urban_heat
@@ -250,47 +255,44 @@ streamlit run app/dashboard.py
 
 ## Technologies Used
 
-- Python
-- Google Earth Engine
-- Landsat 8
-- Pandas
-- NumPy
-- Matplotlib
-- Scikit-learn
-- XGBoost
-- SHAP
-- Streamlit
+| Category           | Tools                                      |
+| ------------------ | ------------------------------------------ |
+| Remote Sensing     | Google Earth Engine, Landsat 8             |
+| Data Processing    | Python 3.12, Pandas, NumPy                 |
+| Machine Learning   | Scikit-learn, XGBoost                      |
+| Explainability     | SHAP                                       |
+| Visualisation      | Matplotlib                                 |
+| Dashboard          | Streamlit                                  |
 
 ---
 
 ## Key Contributions
 
-- Developed an end-to-end remote sensing pipeline for deriving urban thermal indicators.
-- Constructed a city-scale urban heat dataset using a 250 m planning grid.
-- Improved predictive performance through physics-aware feature engineering.
-- Integrated explainable AI to uncover the drivers of urban heat.
-- Built an intervention simulator for evaluating mitigation strategies.
-- Deployed the workflow as an interactive decision-support dashboard.
+- Developed an end-to-end remote sensing pipeline for deriving urban thermal indicators from Landsat 8 imagery using Google Earth Engine.
+- Constructed a city-scale urban heat dataset using a 250 m planning grid over Delhi.
+- Improved predictive performance through physics-aware feature engineering and monotonic XGBoost constraints grounded in thermodynamic relationships.
+- Integrated SHAP-based explainable AI to uncover the primary environmental drivers of urban heat.
+- Built a scenario-based intervention simulator to quantify the cooling potential of urban greening and cool roof strategies.
+- Deployed the full workflow as an interactive Streamlit decision-support dashboard.
 
 ---
 
 ## Future Work
 
-Potential extensions include:
-
-- Integration of meteorological variables
-- Spatial cross-validation frameworks
-- Interactive hotspot mapping
-- User-defined intervention scenarios
-- Multi-city comparative analyses
-- Physics-Informed Neural Networks (PINNs)
+- Integration of meteorological variables (wind speed, humidity, air temperature)
+- Spatial cross-validation frameworks to reduce spatial autocorrelation bias
+- Interactive hotspot mapping within the dashboard
+- User-defined intervention scenarios with custom parameter inputs
+- Multi-city comparative analyses to test model generalizability
+- Physics-Informed Neural Networks (PINNs) for thermodynamically consistent modelling
 
 ---
 
 ## Author
 
-**Ishaan**  
+**Ishaan**
 Undergraduate Engineering Student
+[GitHub](https://github.com/beastb728)
 
 ---
 
