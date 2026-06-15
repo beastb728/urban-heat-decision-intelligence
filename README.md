@@ -7,11 +7,16 @@
 ![XGBoost](https://img.shields.io/badge/XGBoost-Machine%20Learning-orange)
 ![SHAP](https://img.shields.io/badge/SHAP-Explainable%20AI-purple)
 ![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red?logo=streamlit)
-![GitHub last commit](https://img.shields.io/github/last-commit/beastb728/urban-heat-decision-intelligence)
-![GitHub repo size](https://img.shields.io/github/repo-size/beastb728/urban-heat-decision-intelligence)
+![GitHub last commit](https://img.shields.io/github/last-commit/beastb728/urban-heat-intelligence-platform)
+![GitHub repo size](https://img.shields.io/github/repo-size/beastb728/urban-heat-intelligence-platform)
 
 > An explainable geospatial AI platform for understanding, predicting, and mitigating urban heat using satellite-derived environmental indicators and machine learning.
 
+**Live Demo:** https://urban-heat-intelligence-platform.streamlit.app/
+
+**Documentation:** [Methodology](docs/methodology.md)
+
+---
 ---
 
 ## Problem Statement
@@ -290,9 +295,11 @@ streamlit run app/dashboard.py
 
 ## Author
 
-**Ishaan**
-Undergraduate Engineering Student
-[GitHub](https://github.com/beastb728)
+**Ishaan Singh**
+
+Engineering Undergraduate interested in Geospatial AI, Explainable Machine Learning, and Climate Analytics.
+
+GitHub: https://github.com/beastb728
 
 ---
 
